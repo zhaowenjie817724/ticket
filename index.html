@@ -58,6 +58,32 @@
           <p class="score-copy" id="score-copy">填写目标后生成作战方案。</p>
         </section>
 
+        <section class="panel sprint-panel" aria-labelledby="sprint-title">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Sprint</p>
+              <h2 id="sprint-title">抢票冲刺模式</h2>
+            </div>
+            <span class="status-pill">性能专注</span>
+          </div>
+          <div class="sprint-body">
+            <p class="sprint-status" id="sprint-status">冲刺模式未启动</p>
+            <div class="sprint-options">
+              <label><input type="checkbox" id="auto-jump" checked /> 到点自动跳转官方入口</label>
+              <label><input type="checkbox" id="wake-lock-mode" checked /> 防息屏</label>
+              <label><input type="checkbox" id="fullscreen-mode" checked /> 全屏专注</label>
+            </div>
+            <div class="sprint-actions">
+              <button type="button" class="primary-btn" id="arm-sprint">启动冲刺模式</button>
+              <button type="button" class="secondary-btn" id="jump-now">立即跳转网页</button>
+              <button type="button" class="secondary-btn" id="jump-mobile">手机 App/移动入口</button>
+              <button type="button" class="secondary-btn" id="copy-link">复制目标链接</button>
+            </div>
+            <div class="sprint-meta" id="sprint-meta"></div>
+            <div class="network-grid" id="network-grid"></div>
+          </div>
+        </section>
+
         <section class="panel countdown-panel" aria-labelledby="countdown-title">
           <div class="panel-head">
             <div>
