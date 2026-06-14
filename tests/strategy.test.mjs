@@ -1,15 +1,16 @@
 import assert from "node:assert/strict";
 import {
   buildLaunchPlan,
+  buildMobileCandidates,
   buildMobileUrl,
   buildWebUrl,
-  buildActions,
   buildWindows,
   cloneDefaultState,
   formatRemaining,
   getSprintMoment,
   isAllowedOfficialUrl,
   normalizeList,
+  parseOfficialTarget,
   readinessCopy,
   scorePlan
 } from "../src/strategy.js";
@@ -40,8 +41,6 @@ const showScore = scorePlan("show", {
 });
 assert.ok(showScore >= 88, `show score should be strong, got ${showScore}`);
 
-assert.equal(buildActions("rail", state.rail).length, 5);
-assert.equal(buildActions("show", state.show).length, 5);
 assert.equal(buildWindows("rail", state.rail).length, 3);
 assert.equal(buildWindows("show", state.show).length, 3);
 
@@ -63,10 +62,20 @@ assert.ok(railWebUrl.includes("SHH"));
 
 const showWebUrl = buildWebUrl("show", { ...state.show, itemId: "123456" });
 assert.equal(showWebUrl, "https://detail.damai.cn/item.htm?id=123456");
-assert.equal(buildMobileUrl("show", { ...state.show, itemId: "123456" }), "https://m.damai.cn/damai/detail/item.html?itemId=123456");
+assert.equal(parseOfficialTarget("show", "https://detail.damai.cn/item.htm?id=123456").itemId, "123456");
+assert.ok(buildMobileUrl("show", { ...state.show, itemId: "123456" }).startsWith("damai://"));
+assert.ok(
+  buildMobileCandidates("show", { ...state.show, itemId: "123456" }).some((candidate) =>
+    candidate.url.includes("m.damai.cn")
+  )
+);
+assert.ok(
+  buildMobileCandidates("rail", state.rail).some((candidate) => candidate.url.includes("com.MobileTicket"))
+);
 
 assert.equal(isAllowedOfficialUrl("rail", "https://kyfw.12306.cn/otn/leftTicket/init"), true);
 assert.equal(isAllowedOfficialUrl("show", "https://m.damai.cn/damai/detail/item.html?itemId=1"), true);
+assert.equal(isAllowedOfficialUrl("show", "damai://V1/ShowDetail?itemId=1"), true);
 assert.equal(isAllowedOfficialUrl("show", "https://example.com/"), false);
 assert.equal(isAllowedOfficialUrl("show", "javascript:alert(1)"), false);
 
@@ -84,6 +93,7 @@ const plan = buildLaunchPlan("show", {
 }, new Date("2026-07-01T03:50:00.000Z"));
 assert.equal(plan.leadMinutes, 5);
 assert.ok(plan.webUrl.includes("detail.damai.cn"));
-assert.ok(plan.mobileUrl.includes("m.damai.cn"));
+assert.ok(plan.mobileUrl.startsWith("damai://"));
+assert.ok(plan.mobileCandidates.length >= 4);
 
 console.log("strategy tests passed");

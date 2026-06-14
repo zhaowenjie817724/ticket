@@ -1,9 +1,9 @@
 import {
   MODES,
   buildLaunchPlan,
-  buildActions,
   buildWindows,
   cloneDefaultState,
+  parseOfficialTarget,
   readinessCopy,
   scorePlan
 } from "./src/strategy.js";
@@ -13,7 +13,6 @@ const STORAGE_KEY = "jisuqiang.ticket-copilot.v2";
 const state = {
   mode: "rail",
   targets: cloneDefaultState(),
-  checks: {},
   options: {
     autoJump: true,
     fullscreen: true,
@@ -31,35 +30,35 @@ const runtime = {
 
 const fieldConfig = {
   rail: [
+    ["officialUrl", "12306 官方目标链接，粘贴后优先使用", "text", "full"],
     ["from", "出发地", "text"],
     ["to", "目的地", "text"],
     ["date", "出行日期", "datetime-local"],
+    ["sellAt", "起售时间", "datetime-local"],
+    ["leadMinutes", "提前进入分钟数", "number"],
     ["earliest", "最早出发", "time"],
     ["latest", "最晚出发", "time"],
     ["passengers", "人数", "number"],
-    ["sellAt", "起售时间", "datetime-local"],
     ["standbyUntil", "候补截止", "datetime-local"],
     ["fromCode", "出发站电报码，可选", "text"],
     ["toCode", "到达站电报码，可选", "text"],
-    ["leadMinutes", "提前跳转分钟数", "number"],
     ["seats", "可接受席别，逗号分隔", "textarea", "full"],
     ["flexibility", "备选策略，逗号分隔", "textarea", "full"],
-    ["officialUrl", "官方目标链接，可选，优先使用", "text", "full"],
-    ["mobileUrl", "手机 App/移动入口链接，可选", "text", "full"]
+    ["mobileUrl", "自定义手机入口，可选", "text", "full"]
   ],
   show: [
+    ["officialUrl", "大麦项目链接，粘贴详情页可自动识别项目 ID", "text", "full"],
     ["eventName", "演出名称", "text"],
     ["city", "城市", "text"],
     ["date", "演出时间", "datetime-local"],
     ["openAt", "开售时间", "datetime-local"],
+    ["leadMinutes", "提前进入分钟数", "number"],
     ["itemId", "大麦项目 ID，可选", "text"],
     ["viewers", "观演人数", "number"],
     ["budget", "预算上限", "number"],
-    ["leadMinutes", "提前跳转分钟数", "number"],
     ["tiers", "票档优先级，逗号分隔", "textarea", "full"],
     ["backup", "备选策略，逗号分隔", "textarea", "full"],
-    ["officialUrl", "官方目标链接，可选，优先使用", "text", "full"],
-    ["mobileUrl", "手机 App/移动入口链接，可选", "text", "full"]
+    ["mobileUrl", "自定义手机入口，可选", "text", "full"]
   ]
 };
 
@@ -73,9 +72,6 @@ const nodes = {
   scoreBar: document.querySelector("#score-bar"),
   scoreCopy: document.querySelector("#score-copy"),
   timeline: document.querySelector("#timeline"),
-  actionList: document.querySelector("#action-list"),
-  checklist: document.querySelector("#checklist"),
-  resetChecks: document.querySelector("#reset-checks"),
   launcherGrid: document.querySelector("#launcher-grid"),
   refreshTime: document.querySelector("#refresh-time"),
   sprintStatus: document.querySelector("#sprint-status"),
@@ -95,7 +91,6 @@ function loadState() {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
     if (saved.mode && MODES[saved.mode]) state.mode = saved.mode;
     if (saved.targets) state.targets = { ...state.targets, ...saved.targets };
-    if (saved.checks) state.checks = saved.checks;
     if (saved.options) state.options = { ...state.options, ...saved.options };
   } catch {
     localStorage.removeItem(STORAGE_KEY);
@@ -108,7 +103,6 @@ function saveState() {
     JSON.stringify({
       mode: state.mode,
       targets: state.targets,
-      checks: state.checks,
       options: state.options
     })
   );
@@ -116,6 +110,18 @@ function saveState() {
 
 function isMobileDevice() {
   return /Android|iPhone|iPad|iPod|HarmonyOS|Mobile/i.test(navigator.userAgent);
+}
+
+function normalizeTargetData(mode, data) {
+  const normalized = { ...data };
+  const parsedOfficial = parseOfficialTarget(mode, normalized.officialUrl);
+  const parsedMobile = parseOfficialTarget(mode, normalized.mobileUrl);
+
+  if (mode === "show" && !normalized.itemId) {
+    normalized.itemId = parsedOfficial.itemId || parsedMobile.itemId || "";
+  }
+
+  return normalized;
 }
 
 function setMode(mode) {
@@ -133,7 +139,7 @@ function collectForm() {
   nodes.dynamicFields.querySelectorAll("[name]").forEach((input) => {
     data[input.name] = input.value;
   });
-  state.targets[state.mode] = data;
+  state.targets[state.mode] = normalizeTargetData(state.mode, data);
 }
 
 function collectOptions() {
@@ -183,15 +189,15 @@ function renderComputed() {
     nodes.timeline.appendChild(row);
   });
 
-  nodes.actionList.innerHTML = "";
-  buildActions(state.mode, target).forEach((action) => {
-    const item = document.createElement("li");
-    item.textContent = action;
-    nodes.actionList.appendChild(item);
-  });
-
   renderSprint();
   renderLaunchers();
+}
+
+function renderMobileCandidates(plan) {
+  return plan.mobileCandidates
+    .slice(0, 4)
+    .map((candidate) => `<span>${candidate.label}</span>`)
+    .join("");
 }
 
 function renderSprint() {
@@ -203,31 +209,9 @@ function renderSprint() {
     <div><strong>提前进入：</strong><span>${plan.sprintAt}</span><span>${plan.sprintRemaining}</span></div>
     <div><strong>正式开抢：</strong><span>${plan.targetAt}</span><span>${plan.targetRemaining}</span></div>
     <div><strong>网页入口：</strong><span>${plan.webUrl}</span></div>
-    <div><strong>手机入口：</strong><span>${plan.mobileUrl}</span></div>
+    <div><strong>手机优先入口：</strong><span>${plan.mobileCandidates[0]?.label || "未生成"} · ${plan.mobileUrl}</span></div>
+    <div><strong>手机尝试顺序：</strong><span class="candidate-list">${renderMobileCandidates(plan)}</span></div>
   `;
-}
-
-function renderChecklist() {
-  nodes.checklist.innerHTML = "";
-  MODES[state.mode].checklist.forEach((item, index) => {
-    const id = `${state.mode}:${index}`;
-    const row = document.createElement("label");
-    row.className = "check-row";
-
-    const input = document.createElement("input");
-    input.type = "checkbox";
-    input.checked = Boolean(state.checks[id]);
-    input.addEventListener("change", () => {
-      state.checks[id] = input.checked;
-      saveState();
-    });
-
-    const text = document.createElement("span");
-    text.textContent = item;
-
-    row.append(input, text);
-    nodes.checklist.appendChild(row);
-  });
 }
 
 function renderLaunchers() {
@@ -241,7 +225,7 @@ function renderLaunchers() {
     {
       title: "手机 App/移动入口",
       url: plan.mobileUrl,
-      note: "手机端优先尝试，失败会回落到官方网页。"
+      note: "手机按钮会按 App 深链、移动网页、官方网页依次尝试。"
     },
     ...MODES[state.mode].launchers
   ];
@@ -280,16 +264,7 @@ function render() {
   nodes.wakeLock.checked = state.options.wakeLock;
   renderFields();
   renderComputed();
-  renderChecklist();
   renderNetwork();
-}
-
-function resetCurrentChecks() {
-  MODES[state.mode].checklist.forEach((_, index) => {
-    state.checks[`${state.mode}:${index}`] = false;
-  });
-  saveState();
-  renderChecklist();
 }
 
 function addPreconnect(url) {
@@ -307,6 +282,10 @@ function addPreconnect(url) {
   } catch {
     // Ignore invalid optional app links.
   }
+}
+
+function isWebUrl(url) {
+  return /^https?:/i.test(String(url || ""));
 }
 
 async function requestWakeLock() {
@@ -382,20 +361,63 @@ function launch(preferMobile = false, scheduled = false) {
   collectForm();
   const plan = buildLaunchPlan(state.mode, state.targets[state.mode]);
   const mobile = preferMobile || isMobileDevice();
-  const primary = mobile ? plan.mobileUrl : plan.webUrl;
-  const fallback = plan.webUrl;
 
-  if (scheduled || mobile) {
-    window.location.href = primary;
-    if (primary !== fallback) {
-      window.setTimeout(() => {
-        window.location.href = fallback;
-      }, 1400);
-    }
+  if (mobile) {
+    launchMobileQueue(plan);
     return;
   }
 
-  window.open(primary, "_blank", "noopener,noreferrer");
+  if (scheduled) {
+    window.location.href = plan.webUrl;
+    return;
+  }
+
+  window.open(plan.webUrl, "_blank", "noopener,noreferrer");
+}
+
+function launchMobileQueue(plan) {
+  const candidates = plan.mobileCandidates.length
+    ? plan.mobileCandidates
+    : [{ label: "官方网页", url: plan.webUrl, kind: "web" }];
+  let index = 0;
+  let stopped = false;
+
+  const onVisibilityChange = () => {
+    if (document.visibilityState === "hidden") stopped = true;
+  };
+
+  const cleanup = () => {
+    document.removeEventListener("visibilitychange", onVisibilityChange);
+  };
+
+  const attemptNext = () => {
+    if (stopped) {
+      cleanup();
+      return;
+    }
+
+    const candidate = candidates[index];
+    index += 1;
+
+    if (!candidate) {
+      cleanup();
+      window.location.href = plan.webUrl;
+      return;
+    }
+
+    nodes.sprintStatus.textContent = `正在打开：${candidate.label}`;
+    window.location.href = candidate.url;
+
+    if (isWebUrl(candidate.url)) {
+      cleanup();
+      return;
+    }
+
+    window.setTimeout(attemptNext, 1200);
+  };
+
+  document.addEventListener("visibilitychange", onVisibilityChange);
+  attemptNext();
 }
 
 function fireSprint() {
@@ -427,7 +449,7 @@ async function armSprintMode() {
 
   const plan = buildLaunchPlan(state.mode, state.targets[state.mode]);
   addPreconnect(plan.webUrl);
-  addPreconnect(plan.mobileUrl);
+  plan.mobileCandidates.forEach((candidate) => addPreconnect(candidate.url));
   prepareAudio();
   await Promise.all([requestWakeLock(), requestNotifications(), enterFullscreen(), runNetworkCheck()]);
 
@@ -471,7 +493,6 @@ nodes.save.addEventListener("click", () => {
   });
 });
 
-nodes.resetChecks.addEventListener("click", resetCurrentChecks);
 nodes.refreshTime.addEventListener("click", () => {
   renderComputed();
   runNetworkCheck();

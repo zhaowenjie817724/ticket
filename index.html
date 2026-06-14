@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#0f172a" />
     <meta
       name="description"
-      content="极速抢是一个合规购票作战台，支持 12306 和大麦模式切换。"
+      content="极速抢是一个面向顾客的官方购票入口助手，支持 12306 和大麦模式切换。"
     />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="stylesheet" href="./styles.css" />
@@ -15,9 +15,10 @@
   <body>
     <div class="app-shell">
       <header class="topbar">
-        <div>
-          <p class="eyebrow">Ticket Copilot</p>
+        <div class="brand-block">
+          <p class="eyebrow">Official Ticket Assistant</p>
           <h1>极速抢</h1>
+          <p class="brand-copy">提前准备目标入口，到点快速进入官方页面或手机 App，由本人完成确认和支付。</p>
         </div>
         <div class="mode-switch" role="tablist" aria-label="平台模式">
           <button class="mode-btn is-active" data-mode="rail" type="button">12306</button>
@@ -30,15 +31,15 @@
           <div class="panel-head">
             <div>
               <p class="eyebrow">Mode</p>
-              <h2 id="mode-title">12306 车票作战台</h2>
+              <h2 id="mode-title">12306 官方入口配置</h2>
             </div>
-            <span class="status-pill" id="risk-pill">合规辅助</span>
+            <span class="status-pill" id="risk-pill">官方入口</span>
           </div>
 
           <form id="planner-form" class="planner-form">
             <div class="form-grid" id="dynamic-fields"></div>
             <div class="form-actions">
-              <button type="submit" class="primary-btn">生成最高成功率方案</button>
+              <button type="submit" class="primary-btn">生成冲刺入口</button>
               <button type="button" class="secondary-btn" id="save-btn">保存配置</button>
             </div>
           </form>
@@ -48,7 +49,7 @@
           <div class="panel-head">
             <div>
               <p class="eyebrow">Readiness</p>
-              <h2 id="score-title">成功率上限评分</h2>
+              <h2 id="score-title">准备度</h2>
             </div>
             <strong class="score-number" id="score-number">0</strong>
           </div>
@@ -62,7 +63,7 @@
           <div class="panel-head">
             <div>
               <p class="eyebrow">Sprint</p>
-              <h2 id="sprint-title">抢票冲刺模式</h2>
+              <h2 id="sprint-title">开抢入口</h2>
             </div>
             <span class="status-pill">性能专注</span>
           </div>
@@ -75,8 +76,8 @@
             </div>
             <div class="sprint-actions">
               <button type="button" class="primary-btn" id="arm-sprint">启动冲刺模式</button>
-              <button type="button" class="secondary-btn" id="jump-now">立即跳转网页</button>
-              <button type="button" class="secondary-btn" id="jump-mobile">手机 App/移动入口</button>
+              <button type="button" class="secondary-btn" id="jump-now">电脑网页入口</button>
+              <button type="button" class="secondary-btn" id="jump-mobile">手机 App 入口</button>
               <button type="button" class="secondary-btn" id="copy-link">复制目标链接</button>
             </div>
             <div class="sprint-meta" id="sprint-meta"></div>
@@ -95,27 +96,6 @@
           <div class="timeline" id="timeline"></div>
         </section>
 
-        <section class="panel action-panel" aria-labelledby="action-title">
-          <div class="panel-head">
-            <div>
-              <p class="eyebrow">Playbook</p>
-              <h2 id="action-title">执行梯队</h2>
-            </div>
-          </div>
-          <ol class="action-list" id="action-list"></ol>
-        </section>
-
-        <section class="panel checklist-panel" aria-labelledby="checklist-title">
-          <div class="panel-head">
-            <div>
-              <p class="eyebrow">Preflight</p>
-              <h2 id="checklist-title">开抢前检查</h2>
-            </div>
-            <button type="button" class="secondary-btn compact" id="reset-checks">重置</button>
-          </div>
-          <div class="checklist" id="checklist"></div>
-        </section>
-
         <section class="panel launcher-panel" aria-labelledby="launcher-title">
           <div class="panel-head">
             <div>
@@ -127,7 +107,7 @@
           <div class="guard-box">
             <strong>人工确认闸门</strong>
             <p>
-              本项目只做策略、检查、倒计时和官方入口跳转；不做自动锁票、自动提交订单、
+              本项目只做目标配置、倒计时、冲刺跳转和官方入口聚合；不做自动锁票、自动提交订单、
               验证码识别、接口逆向、代理池或多账号并发。
             </p>
           </div>
