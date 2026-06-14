@@ -63,11 +63,15 @@ assert.ok(railWebUrl.includes("SHH"));
 const showWebUrl = buildWebUrl("show", { ...state.show, itemId: "123456" });
 assert.equal(showWebUrl, "https://detail.damai.cn/item.htm?id=123456");
 assert.equal(parseOfficialTarget("show", "https://detail.damai.cn/item.htm?id=123456").itemId, "123456");
-assert.ok(buildMobileUrl("show", { ...state.show, itemId: "123456" }).startsWith("damai://"));
+const showMobileCandidates = buildMobileCandidates("show", { ...state.show, itemId: "123456" });
+assert.ok(buildMobileUrl("show", { ...state.show, itemId: "123456" }).startsWith("intent://m.damai.cn"));
+assert.equal(showMobileCandidates[0].kind, "app");
+assert.ok(showMobileCandidates[0].url.includes("package=cn.damai"));
 assert.ok(
-  buildMobileCandidates("show", { ...state.show, itemId: "123456" }).some((candidate) =>
-    candidate.url.includes("m.damai.cn")
-  )
+  showMobileCandidates.some((candidate) => candidate.url.startsWith("damai://V1/ShowDetail?itemId=123456"))
+);
+assert.ok(
+  showMobileCandidates.some((candidate) => candidate.url === "https://m.damai.cn/shows/item.html?itemId=123456")
 );
 assert.ok(
   buildMobileCandidates("rail", state.rail).some((candidate) => candidate.url.includes("com.MobileTicket"))
@@ -93,7 +97,7 @@ const plan = buildLaunchPlan("show", {
 }, new Date("2026-07-01T03:50:00.000Z"));
 assert.equal(plan.leadMinutes, 5);
 assert.ok(plan.webUrl.includes("detail.damai.cn"));
-assert.ok(plan.mobileUrl.startsWith("damai://"));
+assert.ok(plan.mobileUrl.startsWith("intent://m.damai.cn"));
 assert.ok(plan.mobileCandidates.length >= 4);
 
 console.log("strategy tests passed");

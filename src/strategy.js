@@ -30,8 +30,8 @@ export const MODES = {
       },
       {
         title: "大麦 App",
-        url: "https://www.damai.cn/app/",
-        note: "移动端开售前保持登录，由本人确认提交。"
+        url: "damai://",
+        note: "手机端优先尝试系统拉起 App。"
       }
     ]
   }
@@ -283,10 +283,6 @@ export function buildShowWebUrl(target) {
   return "https://www.damai.cn/";
 }
 
-function encodeFallback(url) {
-  return encodeURIComponent(url);
-}
-
 function uniqueCandidates(candidates) {
   const seen = new Set();
   return candidates.filter((candidate) => {
@@ -304,15 +300,25 @@ export function buildMobileCandidates(mode, target) {
     const parsed = parseOfficialTarget("show", target?.officialUrl);
     const itemId = String(target?.itemId || parsed.itemId || "").trim();
     const mobileWeb = itemId
-      ? `https://m.damai.cn/damai/detail/item.html?itemId=${encodeURIComponent(itemId)}`
-      : "https://www.damai.cn/app/";
-    const fallback = encodeFallback(webUrl);
+      ? `https://m.damai.cn/shows/item.html?itemId=${encodeURIComponent(itemId)}`
+      : "https://m.damai.cn/";
     const itemQuery = itemId ? `?itemId=${encodeURIComponent(itemId)}` : "";
+    const encodedItemId = encodeURIComponent(itemId);
     const candidates = [
       custom && { label: "自定义手机入口", url: custom, kind: custom.startsWith("https:") ? "web" : "app" },
       itemId && {
+        label: "大麦 App 官方详情",
+        url: `intent://m.damai.cn/shows/item.html?itemId=${encodedItemId}#Intent;scheme=https;package=cn.damai;end`,
+        kind: "app"
+      },
+      itemId && {
+        label: "大麦 App 详情",
+        url: `damai://m.damai.cn/shows/item.html?itemId=${encodedItemId}`,
+        kind: "app"
+      },
+      itemId && {
         label: "大麦 App 详情页",
-        url: `damai://V1/ShowDetail?itemId=${encodeURIComponent(itemId)}`,
+        url: `damai://V1/ShowDetail?itemId=${encodedItemId}`,
         kind: "app"
       },
       itemId && {
@@ -322,7 +328,7 @@ export function buildMobileCandidates(mode, target) {
       },
       {
         label: "大麦 App",
-        url: `intent://V1/ShowDetail${itemQuery}#Intent;scheme=damai;package=cn.damai;S.browser_fallback_url=${fallback};end`,
+        url: `intent://V1/ShowDetail${itemQuery}#Intent;scheme=damai;package=cn.damai;end`,
         kind: "app"
       },
       { label: "大麦移动网页", url: mobileWeb, kind: "web" },
@@ -335,7 +341,7 @@ export function buildMobileCandidates(mode, target) {
     custom && { label: "自定义手机入口", url: custom, kind: custom.startsWith("https:") ? "web" : "app" },
     {
       label: "铁路 12306 App",
-      url: `intent://#Intent;scheme=railway12306;package=com.MobileTicket;S.browser_fallback_url=${encodeFallback(webUrl)};end`,
+      url: "intent://#Intent;scheme=railway12306;package=com.MobileTicket;end",
       kind: "app"
     },
     { label: "12306 App", url: "railway12306://", kind: "app" },
