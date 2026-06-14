@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0f172a" />
+    <meta
+      name="description"
+      content="极速抢是一个合规购票作战台，支持 12306 和大麦模式切换。"
+    />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="stylesheet" href="./styles.css" />
+    <title>极速抢</title>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Ticket Copilot</p>
+          <h1>极速抢</h1>
+        </div>
+        <div class="mode-switch" role="tablist" aria-label="平台模式">
+          <button class="mode-btn is-active" data-mode="rail" type="button">12306</button>
+          <button class="mode-btn" data-mode="show" type="button">大麦</button>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <section class="panel command-panel" aria-labelledby="mode-title">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Mode</p>
+              <h2 id="mode-title">12306 车票作战台</h2>
+            </div>
+            <span class="status-pill" id="risk-pill">合规辅助</span>
+          </div>
+
+          <form id="planner-form" class="planner-form">
+            <div class="form-grid" id="dynamic-fields"></div>
+            <div class="form-actions">
+              <button type="submit" class="primary-btn">生成最高成功率方案</button>
+              <button type="button" class="secondary-btn" id="save-btn">保存配置</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="panel score-panel" aria-labelledby="score-title">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Readiness</p>
+              <h2 id="score-title">成功率上限评分</h2>
+            </div>
+            <strong class="score-number" id="score-number">0</strong>
+          </div>
+          <div class="score-meter" aria-hidden="true">
+            <span id="score-bar"></span>
+          </div>
+          <p class="score-copy" id="score-copy">填写目标后生成作战方案。</p>
+        </section>
+
+        <section class="panel countdown-panel" aria-labelledby="countdown-title">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Timing</p>
+              <h2 id="countdown-title">关键时间窗</h2>
+            </div>
+            <button type="button" class="icon-btn" id="refresh-time" aria-label="刷新倒计时">↻</button>
+          </div>
+          <div class="timeline" id="timeline"></div>
+        </section>
+
+        <section class="panel action-panel" aria-labelledby="action-title">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Playbook</p>
+              <h2 id="action-title">执行梯队</h2>
+            </div>
+          </div>
+          <ol class="action-list" id="action-list"></ol>
+        </section>
+
+        <section class="panel checklist-panel" aria-labelledby="checklist-title">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Preflight</p>
+              <h2 id="checklist-title">开抢前检查</h2>
+            </div>
+            <button type="button" class="secondary-btn compact" id="reset-checks">重置</button>
+          </div>
+          <div class="checklist" id="checklist"></div>
+        </section>
+
+        <section class="panel launcher-panel" aria-labelledby="launcher-title">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Official</p>
+              <h2 id="launcher-title">官方入口</h2>
+            </div>
+          </div>
+          <div class="launcher-grid" id="launcher-grid"></div>
+          <div class="guard-box">
+            <strong>人工确认闸门</strong>
+            <p>
+              本项目只做策略、检查、倒计时和官方入口跳转；不做自动锁票、自动提交订单、
+              验证码识别、接口逆向、代理池或多账号并发。
+            </p>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <template id="field-template">
+      <label class="field">
+        <span></span>
+        <input />
+      </label>
+    </template>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
