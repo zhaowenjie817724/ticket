@@ -9,6 +9,7 @@
 ```powershell
 cd H:\极速抢
 npm test
+npm run build
 npm start
 ```
 

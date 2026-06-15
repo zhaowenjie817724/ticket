@@ -9,6 +9,7 @@
 - `src/strategy.js`
 - `api/extract-ticket.js`
 - `sw.js`
+- `scripts/build.mjs`
 - `tests/strategy.test.mjs`
 - `tests/extract.test.mjs`
 - 发布配置和文档
@@ -20,7 +21,9 @@
 ## 已验证
 
 - 策略单元测试通过：`npm test`
+- 运行包构建通过：`npm run build`
 - JavaScript 语法检查通过：`node --check app.js`、`node --check src/strategy.js`、`node --check src/extract.js`、`node --check api/extract-ticket.js`
+- GitHub Pages、Vercel、Netlify 已改为只发布 `dist/`，避免测试、脚本和审计文档进入客户访问面。
 - 图片/文字解析测试覆盖 12306 行程和大麦项目页字段。
 - URL 白名单测试覆盖 12306 和大麦域名。
 - 12306 可在填写电报码后生成官方余票页参数链接。

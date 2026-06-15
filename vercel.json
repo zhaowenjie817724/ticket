@@ -1,6 +1,8 @@
 {
   "cleanUrls": true,
   "trailingSlash": false,
+  "buildCommand": "npm test && npm run build",
+  "outputDirectory": "dist",
   "headers": [
     {
       "source": "/(.*)",
