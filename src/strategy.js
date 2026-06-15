@@ -46,14 +46,14 @@ export const DEFAULT_STATE = {
     latest: "22:00",
     seats: "二等座,一等座,无座",
     passengers: "1",
+    travellers: "",
     sellAt: "",
     standbyUntil: "",
     flexibility: "相邻站,中转换乘,席别降级,前后一天",
     fromCode: "",
     toCode: "",
     officialUrl: "",
-    mobileUrl: "",
-    leadMinutes: "5"
+    mobileUrl: ""
   },
   show: {
     eventName: "演唱会",
@@ -64,10 +64,10 @@ export const DEFAULT_STATE = {
     tiers: "首选票档,可接受票档,保底票档",
     budget: "",
     viewers: "1",
+    viewerNames: "",
     backup: "同城加场,相邻城市,二次放票,退票回流",
     officialUrl: "",
-    mobileUrl: "",
-    leadMinutes: "5"
+    mobileUrl: ""
   }
 };
 
@@ -83,27 +83,6 @@ export function normalizeList(value) {
     .filter(Boolean);
 }
 
-export function parseDateTime(value) {
-  if (!value) return null;
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
-export function formatRemaining(target, now = new Date()) {
-  const date = parseDateTime(target);
-  if (!date) return "未设置";
-  const diff = date.getTime() - now.getTime();
-  if (diff <= 0) return "已进入窗口";
-  const seconds = Math.floor(diff / 1000);
-  const days = Math.floor(seconds / 86400);
-  const hours = Math.floor((seconds % 86400) / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const sec = seconds % 60;
-  if (days > 0) return `${days} 天 ${hours} 小时 ${minutes} 分`;
-  if (hours > 0) return `${hours} 小时 ${minutes} 分 ${sec} 秒`;
-  return `${minutes} 分 ${sec} 秒`;
-}
-
 export function scoreRailPlan(target) {
   const seats = normalizeList(target.seats);
   const flexibility = normalizeList(target.flexibility);
@@ -111,12 +90,12 @@ export function scoreRailPlan(target) {
   if (target.from && target.to) score += 10;
   if (target.date) score += 8;
   if (target.earliest && target.latest) score += 6;
+  if (target.travellers) score += 5;
   score += Math.min(seats.length * 6, 18);
   score += Math.min(flexibility.length * 7, 28);
   if (target.sellAt) score += 5;
   if (target.standbyUntil) score += 5;
   if (target.officialUrl || (target.fromCode && target.toCode)) score += 5;
-  if (target.leadMinutes) score += 2;
   return Math.min(score, 100);
 }
 
@@ -127,57 +106,17 @@ export function scoreShowPlan(target) {
   if (target.eventName) score += 8;
   if (target.city) score += 7;
   if (target.date) score += 8;
+  if (target.viewerNames) score += 5;
   if (target.openAt) score += 8;
   score += Math.min(tiers.length * 8, 24);
   score += Math.min(backup.length * 6, 24);
   if (target.budget) score += 4;
   if (target.officialUrl || target.itemId) score += 5;
-  if (target.leadMinutes) score += 2;
   return Math.min(score, 100);
 }
 
 export function scorePlan(mode, target) {
   return mode === "show" ? scoreShowPlan(target) : scoreRailPlan(target);
-}
-
-export function buildWindows(mode, target, now = new Date()) {
-  if (mode === "show") {
-    return [
-      {
-        title: "开售时间",
-        value: target.openAt || "未设置",
-        remaining: formatRemaining(target.openAt, now)
-      },
-      {
-        title: "演出日期",
-        value: target.date || "未设置",
-        remaining: formatRemaining(target.date, now)
-      },
-      {
-        title: "二次放票/回流",
-        value: "开售后、退票期、临近开演",
-        remaining: "需人工关注官方入口"
-      }
-    ];
-  }
-
-  return [
-    {
-      title: "起售时间",
-      value: target.sellAt || "未设置",
-      remaining: formatRemaining(target.sellAt, now)
-    },
-    {
-      title: "候补截止",
-      value: target.standbyUntil || "未设置",
-      remaining: formatRemaining(target.standbyUntil, now)
-    },
-    {
-      title: "出行日期",
-      value: target.date || "未设置",
-      remaining: formatRemaining(target.date, now)
-    }
-  ];
 }
 
 export function readinessCopy(score, mode) {
@@ -198,12 +137,6 @@ const ALLOWED_APP_SCHEMES = {
   rail: ["railway12306:", "cn.12306:"],
   show: ["damai:"]
 };
-
-export function getLeadMinutes(target) {
-  const value = Number.parseFloat(target?.leadMinutes);
-  if (!Number.isFinite(value)) return 5;
-  return Math.max(0, Math.min(30, value));
-}
 
 export function dateOnly(value) {
   const match = String(value || "").match(/^\d{4}-\d{2}-\d{2}/);
@@ -379,42 +312,11 @@ export function buildWebUrl(mode, target) {
   return mode === "show" ? buildShowWebUrl(target) : buildRailWebUrl(target);
 }
 
-export function getTargetMoment(mode, target) {
-  return parseDateTime(mode === "show" ? target?.openAt : target?.sellAt);
-}
-
-export function getSprintMoment(mode, target) {
-  const targetMoment = getTargetMoment(mode, target);
-  if (!targetMoment) return null;
-  return new Date(targetMoment.getTime() - getLeadMinutes(target) * 60 * 1000);
-}
-
-export function formatDateTime(date) {
-  if (!date) return "未设置";
-  const pad = (value) => String(value).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
-}
-
-export function buildLaunchPlan(mode, target, now = new Date()) {
-  const targetMoment = getTargetMoment(mode, target);
-  const sprintMoment = getSprintMoment(mode, target);
+export function buildLaunchPlan(mode, target) {
   return {
     mode,
     webUrl: buildWebUrl(mode, target),
     mobileUrl: buildMobileUrl(mode, target),
-    mobileCandidates: buildMobileCandidates(mode, target),
-    leadMinutes: getLeadMinutes(target),
-    targetMoment,
-    sprintMoment,
-    sprintAt: formatDateTime(sprintMoment),
-    targetAt: formatDateTime(targetMoment),
-    sprintRemaining: sprintMoment ? formatRemaining(sprintMoment.toISOString(), now) : "未设置",
-    targetRemaining: targetMoment ? formatRemaining(targetMoment.toISOString(), now) : "未设置"
+    mobileCandidates: buildMobileCandidates(mode, target)
   };
-}
-
-export function shouldFireSprint(mode, target, now = new Date()) {
-  const sprintMoment = getSprintMoment(mode, target);
-  if (!sprintMoment) return false;
-  return now.getTime() >= sprintMoment.getTime();
 }

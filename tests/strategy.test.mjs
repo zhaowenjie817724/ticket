@@ -4,10 +4,7 @@ import {
   buildMobileCandidates,
   buildMobileUrl,
   buildWebUrl,
-  buildWindows,
   cloneDefaultState,
-  formatRemaining,
-  getSprintMoment,
   isAllowedOfficialUrl,
   normalizeList,
   parseOfficialTarget,
@@ -41,11 +38,6 @@ const showScore = scorePlan("show", {
 });
 assert.ok(showScore >= 88, `show score should be strong, got ${showScore}`);
 
-assert.equal(buildWindows("rail", state.rail).length, 3);
-assert.equal(buildWindows("show", state.show).length, 3);
-
-assert.equal(formatRemaining(""), "未设置");
-assert.equal(formatRemaining("2000-01-01T00:00:00"), "已进入窗口");
 assert.ok(readinessCopy(95, "rail").includes("上限"));
 
 const railWebUrl = buildWebUrl("rail", {
@@ -87,19 +79,11 @@ assert.equal(isAllowedOfficialUrl("show", "damai://V1/ShowDetail?itemId=1"), tru
 assert.equal(isAllowedOfficialUrl("show", "https://example.com/"), false);
 assert.equal(isAllowedOfficialUrl("show", "javascript:alert(1)"), false);
 
-const sprintMoment = getSprintMoment("show", {
-  ...state.show,
-  openAt: "2026-07-01T12:00:00",
-  leadMinutes: "5"
-});
-assert.equal(new Date("2026-07-01T12:00:00").getTime() - sprintMoment.getTime(), 5 * 60 * 1000);
-
 const plan = buildLaunchPlan("show", {
   ...state.show,
   openAt: "2026-07-01T12:00:00",
   itemId: "888"
-}, new Date("2026-07-01T03:50:00.000Z"));
-assert.equal(plan.leadMinutes, 5);
+});
 assert.ok(plan.webUrl.includes("detail.damai.cn"));
 assert.ok(plan.mobileUrl.startsWith("intent://m.damai.cn"));
 assert.ok(plan.mobileCandidates.length >= 4);

@@ -6,8 +6,14 @@ import {
   readinessCopy,
   scorePlan
 } from "./src/strategy.js";
+import {
+  buildExtractionResult,
+  cleanExtractText,
+  normalizeExtractedFields
+} from "./src/extract.js";
 
 const STORAGE_KEY = "jisuqiang.ticket-request.v1";
+const OCR_SCRIPT_URL = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
 
 const state = {
   mode: "rail",
@@ -23,6 +29,7 @@ const fieldConfig = {
     ["to", "目的地", "text"],
     ["date", "出行日期", "datetime-local"],
     ["passengers", "人数", "number"],
+    ["travellers", "乘车人/证件备注", "textarea", "full"],
     ["earliest", "最早出发", "time"],
     ["latest", "最晚出发", "time"],
     ["seats", "可接受席别", "textarea", "full"],
@@ -43,6 +50,7 @@ const fieldConfig = {
     ["openAt", "开售时间，可选", "datetime-local"],
     ["itemId", "大麦项目 ID，可选", "text"],
     ["viewers", "观演人数", "number"],
+    ["viewerNames", "观演人/证件备注", "textarea", "full"],
     ["budget", "预算上限", "number"],
     ["tiers", "票档优先级", "textarea", "full"],
     ["backup", "可接受方案", "textarea", "full"],
@@ -70,8 +78,15 @@ const nodes = {
   shareRequest: document.querySelector("#share-request"),
   actionStatus: document.querySelector("#action-status"),
   launcherGrid: document.querySelector("#launcher-grid"),
-  candidateList: document.querySelector("#candidate-list")
+  candidateList: document.querySelector("#candidate-list"),
+  imageInput: document.querySelector("#image-input"),
+  imageExtract: document.querySelector("#image-extract"),
+  extractText: document.querySelector("#extract-text"),
+  textApply: document.querySelector("#text-apply"),
+  extractStatus: document.querySelector("#extract-status")
 };
+
+let tesseractLoader = null;
 
 function loadState() {
   try {
@@ -110,8 +125,39 @@ function setStatus(message, tone = "muted") {
   nodes.actionStatus.dataset.tone = tone;
 }
 
+function setExtractStatus(message, tone = "muted") {
+  nodes.extractStatus.textContent = message;
+  nodes.extractStatus.dataset.tone = tone;
+}
+
 function isWebUrl(url) {
   return /^https?:/i.test(String(url || ""));
+}
+
+function isModeField(mode, name) {
+  return fieldConfig[mode].some(([fieldName]) => fieldName === name);
+}
+
+function mergeExtractedFields(mode, fields) {
+  const defaults = cloneDefaultState()[mode];
+  const target = { ...state.targets[mode] };
+  const applied = [];
+
+  Object.entries(fields).forEach(([name, value]) => {
+    const next = String(value || "").trim();
+    if (!next || !isModeField(mode, name)) return;
+
+    const current = String(target[name] || "").trim();
+    const defaultValue = String(defaults[name] || "").trim();
+    const shouldReplace = !current || current === defaultValue || ["officialUrl", "mobileUrl", "itemId"].includes(name);
+    if (!shouldReplace) return;
+
+    target[name] = next;
+    applied.push(name);
+  });
+
+  state.targets[mode] = normalizeTargetData(mode, target);
+  return applied;
 }
 
 function isEmbeddedBrowser() {
@@ -188,6 +234,7 @@ function buildRequestText(mode, target, plan) {
       `演出：${displayDateTime(target.date)}`,
       `开售：${displayDateTime(target.openAt)}`,
       `人数：${displayValue(target.viewers)}`,
+      `观演人：${displayValue(target.viewerNames)}`,
       `预算：${displayValue(target.budget)}`,
       `票档：${displayValue(target.tiers)}`,
       `方案：${displayValue(target.backup)}`,
@@ -205,6 +252,7 @@ function buildRequestText(mode, target, plan) {
     `日期：${displayDateTime(target.date)}`,
     `时间：${displayValue(target.earliest)} - ${displayValue(target.latest)}`,
     `人数：${displayValue(target.passengers)}`,
+    `乘车人：${displayValue(target.travellers)}`,
     `席别：${displayValue(target.seats)}`,
     `方案：${displayValue(target.flexibility)}`,
     `候补截止：${displayDateTime(target.standbyUntil)}`,
@@ -222,6 +270,7 @@ function summaryRows(mode, target, plan) {
       ["城市", displayValue(target.city)],
       ["演出时间", displayDateTime(target.date)],
       ["人数/预算", `${displayValue(target.viewers)} 人 · ${displayValue(target.budget, "预算未填")}`],
+      ["观演人", displayValue(target.viewerNames)],
       ["票档", displayValue(target.tiers)],
       ["入口", plan.webUrl]
     ];
@@ -233,6 +282,7 @@ function summaryRows(mode, target, plan) {
     ["出行时间", displayDateTime(target.date)],
     ["时间窗口", `${displayValue(target.earliest)} - ${displayValue(target.latest)}`],
     ["人数/席别", `${displayValue(target.passengers)} 人 · ${displayValue(target.seats)}`],
+    ["乘车人", displayValue(target.travellers)],
     ["可接受方案", displayValue(target.flexibility)],
     ["入口", plan.webUrl]
   ];
@@ -329,6 +379,137 @@ async function copyText(text) {
   textarea.select();
   document.execCommand("copy");
   textarea.remove();
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error("图片读取失败"));
+    reader.readAsDataURL(file);
+  });
+}
+
+function loadImage(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("图片格式无法识别"));
+    image.src = dataUrl;
+  });
+}
+
+async function prepareImageDataUrl(file) {
+  if (!file?.type?.startsWith("image/")) throw new Error("请选择图片文件");
+  const dataUrl = await readFileAsDataUrl(file);
+  const image = await loadImage(dataUrl);
+  const maxSide = 1600;
+  const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
+  if (scale >= 1 && file.size <= 1_800_000) return dataUrl;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+  canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+  const context = canvas.getContext("2d");
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL("image/jpeg", 0.82);
+}
+
+async function callExtractionApi(imageDataUrl) {
+  const response = await fetch("/api/extract-ticket", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      mode: state.mode,
+      image: imageDataUrl
+    })
+  });
+
+  if (!response.ok) {
+    const detail = await response.json().catch(() => ({}));
+    throw new Error(detail.error || "模型接口不可用");
+  }
+
+  return response.json();
+}
+
+function loadTesseract() {
+  if (window.Tesseract) return Promise.resolve(window.Tesseract);
+  if (tesseractLoader) return tesseractLoader;
+
+  tesseractLoader = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = OCR_SCRIPT_URL;
+    script.async = true;
+    script.onload = () => (window.Tesseract ? resolve(window.Tesseract) : reject(new Error("OCR 初始化失败")));
+    script.onerror = () => reject(new Error("OCR 组件加载失败"));
+    document.head.appendChild(script);
+  });
+
+  return tesseractLoader;
+}
+
+async function recognizeWithBrowserOcr(file) {
+  const tesseract = await loadTesseract();
+  const result = await tesseract.recognize(file, "chi_sim+eng", {
+    logger(progress) {
+      if (progress.status === "recognizing text") {
+        setExtractStatus(`本机识别中 ${Math.round((progress.progress || 0) * 100)}%`, "loading");
+      }
+    }
+  });
+  return buildExtractionResult(state.mode, result?.data?.text || "", "browser-ocr");
+}
+
+function applyExtractionResult(result) {
+  const fields = normalizeExtractedFields(state.mode, result);
+  const applied = mergeExtractedFields(state.mode, fields);
+  const rawText = cleanExtractText(result.rawText || nodes.extractText.value || "");
+  if (rawText) nodes.extractText.value = rawText;
+
+  render();
+  saveState();
+
+  if (!applied.length) {
+    setExtractStatus("识别完成，但没有新的可填字段。", "muted");
+    return;
+  }
+
+  setExtractStatus(`已填入 ${applied.length} 个字段。`, "success");
+  setStatus("索票单已根据图片更新。", "success");
+}
+
+async function extractFromImage() {
+  const file = nodes.imageInput.files?.[0];
+  if (!file) {
+    setExtractStatus("请选择图片。", "loading");
+    return;
+  }
+
+  try {
+    setExtractStatus("正在压缩图片。", "loading");
+    const imageDataUrl = await prepareImageDataUrl(file);
+    setExtractStatus("正在调用识别接口。", "loading");
+    const result = await callExtractionApi(imageDataUrl);
+    applyExtractionResult(result);
+  } catch (apiError) {
+    try {
+      setExtractStatus("接口不可用，正在本机识别。", "loading");
+      const result = await recognizeWithBrowserOcr(file);
+      applyExtractionResult(result);
+    } catch (ocrError) {
+      setExtractStatus("图片识别不可用，可粘贴截图文字后填入。", "loading");
+    }
+  }
+}
+
+function applyExtractText() {
+  const text = nodes.extractText.value;
+  if (!cleanExtractText(text)) {
+    setExtractStatus("请先粘贴识别文字。", "loading");
+    return;
+  }
+  applyExtractionResult(buildExtractionResult(state.mode, text, "pasted-text"));
 }
 
 async function copyRequestText() {
@@ -444,6 +625,8 @@ nodes.reset.addEventListener("click", resetCurrentMode);
 nodes.mobileOpen.addEventListener("click", openMobileQueue);
 nodes.copyRequest.addEventListener("click", copyRequestText);
 nodes.shareRequest.addEventListener("click", shareRequestText);
+nodes.imageExtract.addEventListener("click", extractFromImage);
+nodes.textApply.addEventListener("click", applyExtractText);
 
 loadState();
 render();

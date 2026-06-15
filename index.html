@@ -37,6 +37,31 @@
             <span class="status-pill">客户索票</span>
           </div>
 
+          <div class="prefill-box" aria-labelledby="prefill-title">
+            <div class="prefill-head">
+              <div>
+                <p class="eyebrow">Image</p>
+                <h3 id="prefill-title">截图填表</h3>
+              </div>
+              <span class="status-pill neutral">手机可用</span>
+            </div>
+            <div class="prefill-grid">
+              <label class="upload-field">
+                <span>上传截图</span>
+                <input id="image-input" type="file" accept="image/*" capture="environment" />
+              </label>
+              <label class="field extract-text-field">
+                <span>识别文字</span>
+                <textarea id="extract-text" rows="4" placeholder="截图文字、订单页文字、项目页文字"></textarea>
+              </label>
+            </div>
+            <div class="prefill-actions">
+              <button type="button" class="primary-btn" id="image-extract">识别并填入</button>
+              <button type="button" class="secondary-btn" id="text-apply">从文字填入</button>
+            </div>
+            <p class="action-status" id="extract-status" data-tone="muted">可从截图提取票需字段。</p>
+          </div>
+
           <form id="planner-form" class="planner-form">
             <div class="form-grid" id="dynamic-fields"></div>
             <div class="form-actions">
