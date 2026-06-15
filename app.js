@@ -80,6 +80,7 @@ const nodes = {
   launcherGrid: document.querySelector("#launcher-grid"),
   candidateList: document.querySelector("#candidate-list"),
   imageInput: document.querySelector("#image-input"),
+  imageFileName: document.querySelector("#image-file-name"),
   imageExtract: document.querySelector("#image-extract"),
   extractText: document.querySelector("#extract-text"),
   textApply: document.querySelector("#text-apply"),
@@ -128,6 +129,11 @@ function setStatus(message, tone = "muted") {
 function setExtractStatus(message, tone = "muted") {
   nodes.extractStatus.textContent = message;
   nodes.extractStatus.dataset.tone = tone;
+}
+
+function updateImageFileName() {
+  const file = nodes.imageInput.files?.[0];
+  nodes.imageFileName.textContent = file ? file.name : "未选择图片";
 }
 
 function isWebUrl(url) {
@@ -625,6 +631,7 @@ nodes.reset.addEventListener("click", resetCurrentMode);
 nodes.mobileOpen.addEventListener("click", openMobileQueue);
 nodes.copyRequest.addEventListener("click", copyRequestText);
 nodes.shareRequest.addEventListener("click", shareRequestText);
+nodes.imageInput.addEventListener("change", updateImageFileName);
 nodes.imageExtract.addEventListener("click", extractFromImage);
 nodes.textApply.addEventListener("click", applyExtractText);
 

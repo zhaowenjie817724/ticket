@@ -48,7 +48,11 @@
             <div class="prefill-grid">
               <label class="upload-field">
                 <span>上传截图</span>
-                <input id="image-input" type="file" accept="image/*" capture="environment" />
+                <input id="image-input" class="visually-hidden" type="file" accept="image/*" capture="environment" />
+                <span class="upload-drop">
+                  <strong>选择截图</strong>
+                  <small id="image-file-name">未选择图片</small>
+                </span>
               </label>
               <label class="field extract-text-field">
                 <span>识别文字</span>
