@@ -67,14 +67,18 @@ const showMobileCandidates = buildMobileCandidates("show", { ...state.show, item
 assert.ok(buildMobileUrl("show", { ...state.show, itemId: "123456" }).startsWith("intent://m.damai.cn"));
 assert.equal(showMobileCandidates[0].kind, "app");
 assert.ok(showMobileCandidates[0].url.includes("package=cn.damai"));
+assert.ok(showMobileCandidates[0].url.includes("S.browser_fallback_url="));
 assert.ok(
   showMobileCandidates.some((candidate) => candidate.url.startsWith("damai://V1/ShowDetail?itemId=123456"))
 );
 assert.ok(
-  showMobileCandidates.some((candidate) => candidate.url === "https://m.damai.cn/shows/item.html?itemId=123456")
+  showMobileCandidates.some((candidate) => candidate.url === "https://m.damai.cn/damai/detail/item.html?itemId=123456")
 );
 assert.ok(
   buildMobileCandidates("rail", state.rail).some((candidate) => candidate.url.includes("com.MobileTicket"))
+);
+assert.ok(
+  buildMobileCandidates("rail", state.rail).some((candidate) => candidate.url.includes("S.browser_fallback_url="))
 );
 
 assert.equal(isAllowedOfficialUrl("rail", "https://kyfw.12306.cn/otn/leftTicket/init"), true);

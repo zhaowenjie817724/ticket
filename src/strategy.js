@@ -292,6 +292,10 @@ function uniqueCandidates(candidates) {
   });
 }
 
+function encodeFallback(url) {
+  return encodeURIComponent(url);
+}
+
 export function buildMobileCandidates(mode, target) {
   const custom = safeUrl(mode, target?.mobileUrl);
   const webUrl = buildWebUrl(mode, target);
@@ -300,20 +304,29 @@ export function buildMobileCandidates(mode, target) {
     const parsed = parseOfficialTarget("show", target?.officialUrl);
     const itemId = String(target?.itemId || parsed.itemId || "").trim();
     const mobileWeb = itemId
-      ? `https://m.damai.cn/shows/item.html?itemId=${encodeURIComponent(itemId)}`
+      ? `https://m.damai.cn/damai/detail/item.html?itemId=${encodeURIComponent(itemId)}`
       : "https://m.damai.cn/";
+    const secondaryMobileWeb = itemId
+      ? `https://m.damai.cn/shows/item.html?itemId=${encodeURIComponent(itemId)}`
+      : "";
     const itemQuery = itemId ? `?itemId=${encodeURIComponent(itemId)}` : "";
     const encodedItemId = encodeURIComponent(itemId);
+    const fallback = encodeFallback(mobileWeb || webUrl);
     const candidates = [
       custom && { label: "自定义手机入口", url: custom, kind: custom.startsWith("https:") ? "web" : "app" },
       itemId && {
         label: "大麦 App 官方详情",
-        url: `intent://m.damai.cn/shows/item.html?itemId=${encodedItemId}#Intent;scheme=https;package=cn.damai;end`,
+        url: `intent://m.damai.cn/damai/detail/item.html?itemId=${encodedItemId}#Intent;scheme=https;package=cn.damai;S.browser_fallback_url=${fallback};end`,
         kind: "app"
       },
       itemId && {
-        label: "大麦 App 详情",
-        url: `damai://m.damai.cn/shows/item.html?itemId=${encodedItemId}`,
+        label: "大麦 App Scheme 详情",
+        url: `intent://detail${itemQuery}#Intent;scheme=damai;package=cn.damai;S.browser_fallback_url=${fallback};end`,
+        kind: "app"
+      },
+      itemId && {
+        label: "大麦 App 域名详情",
+        url: `damai://damai.cn/detail?itemId=${encodedItemId}`,
         kind: "app"
       },
       itemId && {
@@ -328,10 +341,12 @@ export function buildMobileCandidates(mode, target) {
       },
       {
         label: "大麦 App",
-        url: `intent://V1/ShowDetail${itemQuery}#Intent;scheme=damai;package=cn.damai;end`,
+        url: `intent://V1/ShowDetail${itemQuery}#Intent;scheme=damai;package=cn.damai;S.browser_fallback_url=${fallback};end`,
         kind: "app"
       },
+      { label: "大麦 App 首页", url: "damai://", kind: "app" },
       { label: "大麦移动网页", url: mobileWeb, kind: "web" },
+      secondaryMobileWeb && { label: "大麦移动网页备用", url: secondaryMobileWeb, kind: "web" },
       { label: "大麦网页入口", url: webUrl, kind: "web" }
     ];
     return uniqueCandidates(candidates.filter(Boolean));
@@ -341,7 +356,12 @@ export function buildMobileCandidates(mode, target) {
     custom && { label: "自定义手机入口", url: custom, kind: custom.startsWith("https:") ? "web" : "app" },
     {
       label: "铁路 12306 App",
-      url: "intent://#Intent;scheme=railway12306;package=com.MobileTicket;end",
+      url: `intent://#Intent;scheme=railway12306;package=com.MobileTicket;S.browser_fallback_url=${encodeFallback(webUrl)};end`,
+      kind: "app"
+    },
+    {
+      label: "铁路 12306 App 直达",
+      url: `intent://#Intent;package=com.MobileTicket;S.browser_fallback_url=${encodeFallback(webUrl)};end`,
       kind: "app"
     },
     { label: "12306 App", url: "railway12306://", kind: "app" },

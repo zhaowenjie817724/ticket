@@ -1,11 +1,11 @@
 {
-  "name": "极速抢",
-  "short_name": "极速抢",
-  "description": "12306 和大麦双模式合规购票作战台。",
+  "name": "极速抢索票台",
+  "short_name": "索票台",
+  "description": "12306 和大麦双模式客户索票单整理工具。",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#f7f8fb",
-  "theme_color": "#0f172a",
+  "theme_color": "#0f766e",
   "icons": [
     {
       "src": "./assets/icon-192.svg",

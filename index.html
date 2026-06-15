@@ -3,22 +3,22 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#0f172a" />
+    <meta name="theme-color" content="#0f766e" />
     <meta
       name="description"
-      content="极速抢是一个面向顾客的官方购票入口助手，支持 12306 和大麦模式切换。"
+      content="极速抢索票台用于整理客户票需、生成官方购票入口和可复制的索票单。"
     />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="stylesheet" href="./styles.css" />
-    <title>极速抢</title>
+    <title>极速抢索票台</title>
   </head>
   <body>
     <div class="app-shell">
       <header class="topbar">
         <div class="brand-block">
-          <p class="eyebrow">Official Ticket Assistant</p>
-          <h1>极速抢</h1>
-          <p class="brand-copy">提前准备目标入口，到点快速进入官方页面或手机 App，由本人完成确认和支付。</p>
+          <p class="eyebrow">Ticket Request Desk</p>
+          <h1>极速抢索票台</h1>
+          <p class="brand-copy">给客户收票需、整理方案、打开官方入口。只做索票登记和官方跳转，不替客户下单。</p>
         </div>
         <div class="mode-switch" role="tablist" aria-label="平台模式">
           <button class="mode-btn is-active" data-mode="rail" type="button">12306</button>
@@ -27,100 +27,80 @@
       </header>
 
       <main class="workspace">
-        <section class="panel command-panel" aria-labelledby="mode-title">
+        <section class="panel intake-panel" aria-labelledby="mode-title">
           <div class="panel-head">
             <div>
-              <p class="eyebrow">Mode</p>
-              <h2 id="mode-title">12306 官方入口配置</h2>
+              <p class="eyebrow">Intake</p>
+              <h2 id="mode-title">12306 索票信息</h2>
+              <p id="mode-copy" class="panel-copy">收集行程、席别、时间窗口和备选方案。</p>
             </div>
-            <span class="status-pill" id="risk-pill">官方入口</span>
+            <span class="status-pill">客户索票</span>
           </div>
 
           <form id="planner-form" class="planner-form">
             <div class="form-grid" id="dynamic-fields"></div>
             <div class="form-actions">
-              <button type="submit" class="primary-btn">生成冲刺入口</button>
-              <button type="button" class="secondary-btn" id="save-btn">保存配置</button>
+              <button type="submit" class="primary-btn">生成索票单</button>
+              <button type="button" class="secondary-btn" id="save-btn">保存</button>
+              <button type="button" class="secondary-btn" id="reset-btn">清空</button>
             </div>
           </form>
         </section>
 
-        <section class="panel score-panel" aria-labelledby="score-title">
-          <div class="panel-head">
-            <div>
-              <p class="eyebrow">Readiness</p>
-              <h2 id="score-title">准备度</h2>
+        <aside class="side-column">
+          <section class="panel score-panel" aria-labelledby="score-title">
+            <div class="panel-head compact-head">
+              <div>
+                <p class="eyebrow">Quality</p>
+                <h2 id="score-title">需求完整度</h2>
+              </div>
+              <strong class="score-number" id="score-number">0</strong>
             </div>
-            <strong class="score-number" id="score-number">0</strong>
-          </div>
-          <div class="score-meter" aria-hidden="true">
-            <span id="score-bar"></span>
-          </div>
-          <p class="score-copy" id="score-copy">填写目标后生成作战方案。</p>
-        </section>
+            <div class="score-meter" aria-hidden="true">
+              <span id="score-bar"></span>
+            </div>
+            <p class="score-copy" id="score-copy">填写目标后生成索票单。</p>
+          </section>
 
-        <section class="panel sprint-panel" aria-labelledby="sprint-title">
-          <div class="panel-head">
-            <div>
-              <p class="eyebrow">Sprint</p>
-              <h2 id="sprint-title">开抢入口</h2>
+          <section class="panel request-panel" aria-labelledby="request-title">
+            <div class="panel-head compact-head">
+              <div>
+                <p class="eyebrow">Deliverable</p>
+                <h2 id="request-title">索票单</h2>
+              </div>
+              <span class="status-pill neutral">可复制</span>
             </div>
-            <span class="status-pill">性能专注</span>
-          </div>
-          <div class="sprint-body">
-            <p class="sprint-status" id="sprint-status">冲刺模式未启动</p>
-            <div class="sprint-options">
-              <label><input type="checkbox" id="auto-jump" checked /> 到点自动跳转官方入口</label>
-              <label><input type="checkbox" id="wake-lock-mode" checked /> 防息屏</label>
-              <label><input type="checkbox" id="fullscreen-mode" checked /> 全屏专注</label>
+            <div class="request-body">
+              <div class="request-summary" id="request-summary"></div>
+              <pre class="request-text" id="request-text"></pre>
+              <div class="action-grid">
+                <button type="button" class="primary-btn" id="mobile-open">强开官方 App</button>
+                <a class="secondary-btn action-link" id="web-link" href="#" target="_blank" rel="noreferrer">打开官方网页</a>
+                <button type="button" class="secondary-btn" id="copy-request">复制索票单</button>
+                <button type="button" class="secondary-btn" id="share-request">分享</button>
+              </div>
+              <p class="action-status" id="action-status" data-tone="muted">索票单会随表单实时更新。</p>
+              <div class="candidate-list" id="candidate-list"></div>
             </div>
-            <div class="sprint-actions">
-              <button type="button" class="primary-btn" id="arm-sprint">启动冲刺模式</button>
-              <button type="button" class="secondary-btn" id="jump-now">电脑网页入口</button>
-              <button type="button" class="secondary-btn" id="jump-mobile">手机 App 入口</button>
-              <button type="button" class="secondary-btn" id="copy-link">复制目标链接</button>
-            </div>
-            <div class="sprint-meta" id="sprint-meta"></div>
-            <div class="network-grid" id="network-grid"></div>
-          </div>
-        </section>
-
-        <section class="panel countdown-panel" aria-labelledby="countdown-title">
-          <div class="panel-head">
-            <div>
-              <p class="eyebrow">Timing</p>
-              <h2 id="countdown-title">关键时间窗</h2>
-            </div>
-            <button type="button" class="icon-btn" id="refresh-time" aria-label="刷新倒计时">↻</button>
-          </div>
-          <div class="timeline" id="timeline"></div>
-        </section>
+          </section>
+        </aside>
 
         <section class="panel launcher-panel" aria-labelledby="launcher-title">
           <div class="panel-head">
             <div>
               <p class="eyebrow">Official</p>
               <h2 id="launcher-title">官方入口</h2>
+              <p class="panel-copy">客户确认索票单后，从这里进入官方页面或官方 App。</p>
             </div>
           </div>
           <div class="launcher-grid" id="launcher-grid"></div>
           <div class="guard-box">
-            <strong>人工确认闸门</strong>
-            <p>
-              本项目只做目标配置、倒计时、冲刺跳转和官方入口聚合；不做自动锁票、自动提交订单、
-              验证码识别、接口逆向、代理池或多账号并发。
-            </p>
+            <strong>合规边界</strong>
+            <p>本工具只做客户票需整理、官方入口生成和索票单复制；不做自动锁票、自动提交订单、验证码识别、接口逆向、代理池或多账号并发。</p>
           </div>
         </section>
       </main>
     </div>
-
-    <template id="field-template">
-      <label class="field">
-        <span></span>
-        <input />
-      </label>
-    </template>
 
     <script type="module" src="./app.js"></script>
   </body>
