@@ -7,10 +7,8 @@ import {
   readinessCopy,
   scorePlan
 } from "./src/strategy.js";
-import { normalizePrefillMode, sanitizePrefillFields } from "./src/prefill.js";
 
 const STORAGE_KEY = "jisuqiang.ticket-copilot.v2";
-const MAX_PREFILL_IMAGE_BYTES = 8 * 1024 * 1024;
 
 const state = {
   mode: "rail",
@@ -85,11 +83,7 @@ const nodes = {
   armSprint: document.querySelector("#arm-sprint"),
   jumpNow: document.querySelector("#jump-now"),
   jumpMobile: document.querySelector("#jump-mobile"),
-  copyLink: document.querySelector("#copy-link"),
-  imagePrefillFile: document.querySelector("#image-prefill-file"),
-  imagePrefillButton: document.querySelector("#image-prefill-btn"),
-  imagePrefillName: document.querySelector("#image-prefill-name"),
-  imagePrefillStatus: document.querySelector("#image-prefill-status")
+  copyLink: document.querySelector("#copy-link")
 };
 
 function loadState() {
@@ -138,86 +132,6 @@ function setMode(mode) {
   });
   render();
   saveState();
-}
-
-function setPrefillStatus(message, tone = "muted") {
-  nodes.imagePrefillStatus.textContent = message;
-  nodes.imagePrefillStatus.dataset.tone = tone;
-}
-
-function fileToDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error("图片读取失败"));
-    reader.readAsDataURL(file);
-  });
-}
-
-function applyPrefillResult(result) {
-  const mode = normalizePrefillMode(result.mode, state.mode);
-  const fields = sanitizePrefillFields(mode, result.fields || {});
-  const count = Object.keys(fields).length;
-  if (!count) return 0;
-
-  state.mode = mode;
-  runtime.fired = false;
-  nodes.modeButtons.forEach((button) => {
-    button.classList.toggle("is-active", button.dataset.mode === mode);
-  });
-  state.targets[mode] = normalizeTargetData(mode, {
-    ...state.targets[mode],
-    ...fields
-  });
-  render();
-  saveState();
-  return count;
-}
-
-async function runImagePrefill() {
-  const file = nodes.imagePrefillFile.files?.[0];
-  if (!file) {
-    setPrefillStatus("未选择图片", "muted");
-    return;
-  }
-
-  if (file.size > MAX_PREFILL_IMAGE_BYTES) {
-    setPrefillStatus("图片超过 8 MB，请换一张更小的截图。", "error");
-    return;
-  }
-
-  collectForm();
-  nodes.imagePrefillButton.disabled = true;
-  setPrefillStatus("正在识别图片...", "loading");
-
-  try {
-    const image = await fileToDataUrl(file);
-    const response = await fetch("./api/image-prefill", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        mode: state.mode,
-        image,
-        filename: file.name,
-        mimeType: file.type
-      })
-    });
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok || !payload.ok) throw new Error(payload.error || "AI 识别不可用，已保留手动填写。");
-
-    const count = applyPrefillResult(payload);
-    if (!count) {
-      setPrefillStatus("没有识别到可填字段，已保留手动填写。", "muted");
-      return;
-    }
-
-    const provider = payload.provider?.label || "AI";
-    setPrefillStatus(`已填入 ${count} 项 · ${provider}`, "success");
-  } catch (error) {
-    setPrefillStatus(error.message || "AI 识别不可用，已保留手动填写。", "error");
-  } finally {
-    nodes.imagePrefillButton.disabled = false;
-  }
 }
 
 function collectForm() {
@@ -587,13 +501,6 @@ nodes.armSprint.addEventListener("click", armSprintMode);
 nodes.jumpNow.addEventListener("click", () => launch(false, false));
 nodes.jumpMobile.addEventListener("click", () => launch(true, false));
 nodes.copyLink.addEventListener("click", copyLaunchLink);
-nodes.imagePrefillFile.addEventListener("change", () => {
-  const file = nodes.imagePrefillFile.files?.[0];
-  nodes.imagePrefillName.textContent = file ? file.name : "选择图片";
-  nodes.imagePrefillButton.disabled = !file;
-  setPrefillStatus(file ? `${Math.ceil(file.size / 1024)} KB · 等待识别` : "未选择图片", "muted");
-});
-nodes.imagePrefillButton.addEventListener("click", runImagePrefill);
 
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible" && runtime.armed) requestWakeLock();

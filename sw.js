@@ -1,11 +1,10 @@
-const CACHE_NAME = "jisuqiang-v4";
+const CACHE_NAME = "jisuqiang-v3";
 const ASSETS = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
   "./src/strategy.js",
-  "./src/prefill.js",
   "./manifest.webmanifest"
 ];
 

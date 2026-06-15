@@ -6,6 +6,6 @@
   "scripts": {
     "start": "node scripts/server.mjs",
     "preview": "node scripts/server.mjs",
-    "test": "node tests/strategy.test.mjs && node tests/prefill.test.mjs"
+    "test": "node tests/strategy.test.mjs"
   }
 }

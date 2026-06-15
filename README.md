@@ -28,24 +28,6 @@ http://192.168.x.x:5177/
 
 正式给别人使用时，不要依赖同一个 Wi-Fi。把项目部署到 Vercel、Netlify、Cloudflare Pages 或 GitHub Pages，然后分享公网链接。详细步骤见 `DEPLOY.md`。
 
-## AI 图片预填
-
-把 12306 或大麦截图上传到“截图预填”，可以由服务端代理调用视觉模型抽取目标信息，再写入表单。API Key 只放在本地或部署平台的环境变量中，不会进入前端代码。
-
-本地使用时创建 `.env.local`：
-
-```text
-AI_PREFILL_PRIMARY_BASE_URL=https://a-ocnfniawgw.cn-shanghai.fcapp.run
-AI_PREFILL_PRIMARY_API_KEY=你的 AnyRouter Key
-AI_PREFILL_PRIMARY_MODEL=gpt-5.5
-
-AI_PREFILL_FALLBACK_BASE_URL=https://muyuan.do
-AI_PREFILL_FALLBACK_API_KEY=你的 muyuan.do Key
-AI_PREFILL_FALLBACK_MODEL=Image #1
-```
-
-然后运行 `npm start`。如果两个模型都不可用，界面会保留手动填写，不影响原有冲刺入口功能。纯静态托管没有后端代理，AI 图片预填会自动不可用。
-
 ## 平台覆盖
 
 - 电脑：Windows/macOS/Linux 浏览器。
@@ -61,7 +43,6 @@ AI_PREFILL_FALLBACK_MODEL=Image #1
 - 起售时间和候补截止时间。
 - 可填写出发站/到达站电报码，直接生成官方余票目标链接。
 - 可填写官方目标链接，优先跳转到你指定的 12306 页面。
-- 可上传车票、候补或余票截图，自动预填可识别字段。
 - 手机端会尝试 12306 App 深链、Android App intent 和官方网页兜底。
 - 相邻站、中转换乘、席别降级、前后一天等备选策略。
 - 官方入口：12306 官网和官方余票查询。
@@ -72,7 +53,6 @@ AI_PREFILL_FALLBACK_MODEL=Image #1
 - 开售时间。
 - 可填写大麦项目 ID，自动生成电脑网页入口和手机移动入口。
 - 可直接粘贴大麦详情页链接，自动识别 `itemId`。
-- 可上传项目详情、开售或订单截图，自动预填可识别字段。
 - 手机端会尝试大麦 App 深链、Android App intent、官方移动页和网页兜底。
 - 可填写官方目标链接，优先跳转到你指定的大麦页面。
 - 票档优先级。

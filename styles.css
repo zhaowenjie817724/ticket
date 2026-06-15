@@ -151,75 +151,6 @@ h2 {
   padding: 0 18px 18px;
 }
 
-.prefill-box {
-  margin: 0 18px 16px;
-  padding: 12px;
-  background: #f8fafc;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-}
-
-.prefill-controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: stretch;
-}
-
-.upload-control {
-  position: relative;
-  flex: 1 1 260px;
-  display: grid;
-  gap: 4px;
-  min-height: 52px;
-  padding: 9px 12px;
-  overflow: hidden;
-  background: #ffffff;
-  border: 1px dashed #94a3b8;
-  border-radius: 8px;
-}
-
-.upload-control span {
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.upload-control strong {
-  overflow: hidden;
-  color: var(--text);
-  font-size: 14px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.upload-control input {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.prefill-status {
-  margin-top: 8px;
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1.45;
-}
-
-.prefill-status[data-tone="success"] {
-  color: var(--ok);
-}
-
-.prefill-status[data-tone="error"] {
-  color: var(--danger);
-}
-
-.prefill-status[data-tone="loading"] {
-  color: var(--accent);
-}
-
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -293,13 +224,6 @@ h2 {
   background: var(--surface-strong);
   border-color: var(--line);
   color: var(--text);
-}
-
-.primary-btn:disabled,
-.secondary-btn:disabled,
-.icon-btn:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
 }
 
 .secondary-btn.compact {
@@ -533,8 +457,7 @@ h2 {
   }
 
   .sprint-actions .primary-btn,
-  .sprint-actions .secondary-btn,
-  .prefill-controls .secondary-btn {
+  .sprint-actions .secondary-btn {
     flex: 1 1 100%;
   }
 }
